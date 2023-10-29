@@ -51,11 +51,20 @@ def halfPlane(direction, D=1000):
     plane = sd.translate(planetype[direction])(plane)
     return plane
 
+def chamferCircle(r):
+    piece = sd.circle(r)
+    side = (np.sqrt(2)-1)*r
+    side2 = np.sqrt(3-2*np.sqrt(2))*r
+
+    chamfer = sd.square(side)
+    chamfer += sd.translate([side,0])(sd.rotate([0,0,45])(sd.square(side2)))
+    chamfer += sd.mirror([1,0])(chamfer)
+    piece += sd.translate([0,-r])(chamfer)
+    return piece
+
 if __name__ == '__main__':
-    R = 62
     fn = 64
     d_base=145
-    d_small=27
     outer = 3
     # citadel = False
     citadel = True
@@ -65,24 +74,29 @@ if __name__ == '__main__':
         d_bottle = d_citadel
         h_bottle = 45
         n_bottle = 9
+        n_grip = 6
     else:
         d_bottle = 25
         h_bottle = 80
         n_bottle = 12
+        n_grip = 6
     d_large = d_bottle+2
 
     r=2
     upknob = 70
-    section = sd.translate([(d_base-r)/2, 0])(sd.circle(r))
+    # section = sd.translate([(d_base-r)/2, 0])(sd.circle(r))
+    section = sd.translate([(d_base-r)/2, 0])(chamferCircle(r))
     section += sd.translate([(d_base-r)/2, 10])(sd.circle(r))
-    section += sd.translate([(d_base)/2-2*r-d_citadel, 0])(sd.circle(r))
+    # section += sd.translate([(d_base)/2-2*r-d_citadel, 0])(sd.circle(r))
+    section += sd.square(r, center=True)
     # section += sd.translate([(d_base)/2-2*r-d_citadel, 2*r+d_citadel])(sd.circle(r))
-    section += sd.translate([0, .3*d_base])(sd.circle(2*r))
+    section += sd.translate([0, .35*d_base])(sd.circle(2*r))
     section = sd.hull()(section)
     knob = sd.translate([0, upknob])(sd.circle(r=20))
     knob += sd.translate([0, upknob+20])(sd.circle(r=10))
     knob += sd.translate([0, upknob-20])(sd.circle(r=10))
     knob = sd.hull()(knob)
+    knob += sd.translate([0, upknob+25])(sd.circle(r=10))
     section += knob
     section += sd.square([10,upknob])
     section = sd.intersection()(section, halfPlane('R'))
@@ -91,22 +105,24 @@ if __name__ == '__main__':
     base = sd.rotate_extrude()(section)
 
     large = sd.cylinder(d=d_large, h=100, center=False)
-    large = sd.translate([(d_base-d_large)/2-outer,0,10])(large)
-    small = sd.cylinder(d=d_small, h=100, center=False)
-    small = sd.translate([(d_base-d_large)/2-outer,0,0])(small)
-    finger = sd.cylinder(d=d_small-10, h=100, center=True)
+    large = sd.translate([(d_base-d_large)/2-outer,0,0])(large)
+    finger = sd.cylinder(d=d_large-10, h=100, center=True)
     finger = sd.translate([(d_base-d_large)/2-outer,0,0])(finger)
-    grip = sd.cylinder(d=10, h=100, center=False)
-    grip = sd.translate([20,0,upknob*.8])(grip)
-    hole = large + finger + grip
+    hole = large + finger
     holes = sd.union()(*[sd.rotate([0,0,i*360/n_bottle])(hole) for i in range(n_bottle)])
+    grip = sd.cylinder(d=10, h=100, center=False)
+    grip = sd.rotate([20,0,0])(grip)
+    grip = sd.translate([20,0,upknob*.8])(grip)
+    grips = sd.union()(*[sd.rotate([0,0,i*360/n_grip])(grip) for i in range(n_grip)])
 
     bottle = sd.cylinder(d=d_bottle, h=h_bottle, center=False)
     bottle = sd.translate([(d_base-d_large)/2-outer,0,0])(bottle)
     bottles = sd.union()(*[sd.rotate([0,0,i*360/n_bottle])(bottle) for i in range(n_bottle)])
 
-    final = base - holes + bottles
-    final -= sd.translate([0,0,-upknob])(final)
+    final = base - holes
+    # final += bottles
+    final -= grips
+    final += sd.translate([20,0,h_bottle+5])(final)
     final = sd.scad_render(final, file_header=f'$fn={fn};')
     print(final)
 
