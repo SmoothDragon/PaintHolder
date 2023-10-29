@@ -62,14 +62,23 @@ def chamferCircle(r):
     piece += sd.translate([0,-r])(chamfer)
     return piece
 
-def curvedChamferCircle(r):
+def curvedChamferCircle(r, dirs='D'):
     piece = sd.circle(r)
     side = (np.sqrt(2)-1)*r
-
-    # piece += sd.translate([0,-r])(sd.square(side))
-    piece += sd.translate([0,-r])(sd.square(r))
-    piece -= sd.translate([r*np.sqrt(2), -r*np.sqrt(2)])(piece)
+    direction = {
+        'N':(0,0,180),
+        'S':(0,0,0),
+        'E':(0,0,90),
+        'W':(0,0,-90),
+        'U':(0,0,180),
+        'D':(0,0,0),
+        'R':(0,0,90),
+        'L':(0,0,-90),
+        }
+    piece += sd.translate([0,-r])(sd.square(r/np.sqrt(2)))
+    piece -= sd.translate([r, -r])(sd.circle(side))
     piece += sd.mirror([1,0])(piece)
+    return sd.union()(*[sd.rotate(direction[d])(piece) for d in dirs])
     return piece
 
 if __name__ == '__main__':
@@ -108,6 +117,8 @@ if __name__ == '__main__':
     knob += sd.translate([0, upknob-20])(sd.circle(r=10))
     knob = sd.hull()(knob)
     knob += sd.translate([0, upknob+25])(sd.circle(r=10))
+    knob += sd.translate([0, upknob+45])(curvedChamferCircle(r=10, dirs='DU'))
+    knob += sd.translate([0, upknob+65])(curvedChamferCircle(r=10, dirs='DU'))
     section += knob
     section += sd.square([10,upknob])
     section = sd.intersection()(section, halfPlane('R'))
