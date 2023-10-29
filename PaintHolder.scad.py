@@ -62,6 +62,16 @@ def chamferCircle(r):
     piece += sd.translate([0,-r])(chamfer)
     return piece
 
+def curvedChamferCircle(r):
+    piece = sd.circle(r)
+    side = (np.sqrt(2)-1)*r
+
+    # piece += sd.translate([0,-r])(sd.square(side))
+    piece += sd.translate([0,-r])(sd.square(r))
+    piece -= sd.translate([r*np.sqrt(2), -r*np.sqrt(2)])(piece)
+    piece += sd.mirror([1,0])(piece)
+    return piece
+
 if __name__ == '__main__':
     fn = 64
     d_base=145
@@ -86,6 +96,7 @@ if __name__ == '__main__':
     upknob = 70
     # section = sd.translate([(d_base-r)/2, 0])(sd.circle(r))
     section = sd.translate([(d_base-r)/2, 0])(chamferCircle(r))
+    # section = sd.translate([(d_base-r)/2, 0])(curvedChamferCircle(r))
     section += sd.translate([(d_base-r)/2, 10])(sd.circle(r))
     # section += sd.translate([(d_base)/2-2*r-d_citadel, 0])(sd.circle(r))
     section += sd.square(r, center=True)
@@ -122,7 +133,7 @@ if __name__ == '__main__':
     final = base - holes
     # final += bottles
     final -= grips
-    final += sd.translate([20,0,h_bottle+5])(final)
+    # final += sd.translate([20,0,h_bottle+5])(final)
     final = sd.scad_render(final, file_header=f'$fn={fn};')
     print(final)
 
